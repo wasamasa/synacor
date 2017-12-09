@@ -1,0 +1,22 @@
+jmp 16
+'H'
+'e'
+'l'
+'l'
+'o'
+'\s'
+'W'
+'o'
+'r'
+'l'
+'d'
+'!'
+'\n'
+0
+set r0 2
+rmem r1 r0
+jf r1 33
+out r1
+add r0 r0 1
+jmp 19
+halt

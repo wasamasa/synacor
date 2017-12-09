@@ -4,11 +4,7 @@ require_relative 'util'
 
 def assemble(inpath, outpath)
   values = File.open(inpath) { |f| f.read.split.map(&:to_i) }
-  File.open(outpath, 'wb') do |f|
-    values.each do |value|
-      f.write_u16le(value)
-    end
-  end
+  spit(outpath, values)
 end
 
 if ARGV.length == 2

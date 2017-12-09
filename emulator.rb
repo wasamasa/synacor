@@ -77,12 +77,6 @@ def emulate(program)
   system.run
 end
 
-def slurp(path)
-  result = []
-  File.open(path) { |f| result << f.read_u16le until f.eof? }
-  result
-end
-
 if ARGV.length == 1
   emulate(slurp(ARGV[0]))
 else

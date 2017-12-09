@@ -179,7 +179,11 @@ class System
     print(arg.chr)
   end
 
-  def in; end
+  def _in
+    register = register_index(fetch)
+    arg = STDIN.getc.ord
+    @registers[register] = arg
+  end
 
   def noop; end
 
@@ -207,8 +211,8 @@ class System
     when 17 then call
     when 18 then ret
     when 19 then out
+    when 20 then _in
     when 21 then noop
-    else raise("unimplemented op: #{op}")
     end
   end
 

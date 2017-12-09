@@ -17,7 +17,7 @@ class IO
   end
 
   def putc_u16le(n)
-    assert(n >= 0 && n < 32_768)
+    assert(n >= 0 && n < 32_776)
     high = n >> 8
     low = n & 0xFF
     putc(low)

@@ -8,6 +8,8 @@ class Disassembler
     @instructions = []
     @labels = {}
     @label_index = 1
+    @subrs = {}
+    @subr_index = 1
     @ip = 0
   end
 
@@ -17,6 +19,14 @@ class Disassembler
     @labels[target] = label
     @label_index += 1
     label
+  end
+
+  def gen_subr(target)
+    return @subrs[target] if @subrs[target]
+    subr = "subr_#{@subr_index}"
+    @subrs[target] = subr
+    @subr_index += 1
+    subr
   end
 
   def skip(n = 1)
@@ -174,7 +184,7 @@ class Disassembler
     _, target = peek(2)
     return unless target
     skip(2)
-    "call #{pp_value(target)}"
+    "call #{pp_value(target)} ; #{gen_subr(target)}"
   end
 
   def ret
@@ -246,7 +256,9 @@ class Disassembler
     lines = []
     @instructions.each do |ip, line|
       label = @labels[ip]
+      subr = @subrs[ip]
       lines << "#{label}:" if label
+      lines << ";; #{subr}" if subr
       lines << "#{ip.to_s.rjust(5, ' ')} | #{line}"
     end
     lines.join("\n")

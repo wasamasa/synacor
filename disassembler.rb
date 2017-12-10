@@ -12,6 +12,7 @@ class Disassembler
   end
 
   def gen_label(target)
+    return @labels[target] if @labels[target]
     label = "label_#{@label_index}"
     @labels[target] = label
     @label_index += 1

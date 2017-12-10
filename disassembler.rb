@@ -70,10 +70,10 @@ class Disassembler
   end
 
   def pop
-    _, register, value = peek(3)
-    return unless register?(register) && value
-    skip(3)
-    "pop #{pp_register(register)} #{pp_value(value)}"
+    _, register = peek(2)
+    return unless register?(register)
+    skip(2)
+    "pop #{pp_register(register)}"
   end
 
   def eq

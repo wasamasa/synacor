@@ -2,6 +2,15 @@ def assert(condition)
   raise('assertion failed') unless condition
 end
 
+def register?(value)
+  value >= 32_768
+end
+
+def register_index(value)
+  assert(register?(value))
+  value - 32_768
+end
+
 class IO
   def readbyte_u16le
     low = readbyte

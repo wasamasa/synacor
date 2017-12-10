@@ -26,15 +26,6 @@ class System
     result
   end
 
-  def register?(value)
-    value >= 32_768
-  end
-
-  def register_index(value)
-    assert(register?(value))
-    value - 32_768
-  end
-
   def register_value(value)
     assert(register?(value))
     @registers[value - 32_768]

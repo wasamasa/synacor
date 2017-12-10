@@ -39,10 +39,12 @@ def parse_register(arg)
   register
 end
 
-def parse_instruction(arg)
+def parse_instruction_or_label(arg, labels)
+  label = labels[arg]
   instruction = INSTRUCTION_TO_ID[arg.downcase.to_sym]
-  assert(instruction)
-  instruction
+  result = label || instruction
+  raise("unknown label or instruction: #{arg}") unless result
+  result
 end
 
 def parse_escape(arg)
@@ -68,23 +70,35 @@ def parse_char(arg)
   end
 end
 
-def arg_to_int(arg)
+def arg_to_int(arg, labels)
   case arg
   when /^[0-9]+$/ then parse_literal(arg)
   when /^r([0-9]+)$/ then parse_register($1)
-  when /^[a-zA-Z]{2,4}$/ then parse_instruction(arg)
+  when /^[a-zA-Z0-9_]+$/ then parse_instruction_or_label(arg, labels)
   when /^'([^']+)'$/ then parse_char($1)
   else raise("unknown arg type for: #{arg}")
   end
 end
 
-def assemble(inpath, outpath)
-  words = File.open(inpath) { |f| f.read.split }
-  values = words.map { |word| arg_to_int(word) }
-  spit(outpath, values)
+def strip_labels!(words)
+  labels = {}
+  i = 0
+  words.delete_if do |word|
+    is_label = word[/:$/]
+    label = is_label ? word.chop : word
+    labels[label] = i if is_label
+    i += 1 unless is_label
+    is_label
+  end
+  labels
 end
 
-# TODO: support label syntax
+def assemble(inpath, outpath)
+  words = File.open(inpath) { |f| f.read.split }
+  labels = strip_labels!(words)
+  values = words.map { |word| arg_to_int(word, labels) }
+  spit(outpath, values)
+end
 
 if ARGV.length == 2
   assemble(*ARGV)

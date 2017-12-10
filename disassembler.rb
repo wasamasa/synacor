@@ -3,14 +3,19 @@
 require_relative 'util'
 
 class Disassembler
-  attr_reader :instructions
-
   def initialize(program)
     @program = program
     @instructions = []
-    # TODO: recognize jump targets and save with auto-generated label
     @labels = {}
+    @label_index = 1
     @ip = 0
+  end
+
+  def gen_label(target)
+    label = "label_#{@label_index}"
+    @labels[target] = label
+    @label_index += 1
+    label
   end
 
   def skip(n = 1)
@@ -87,22 +92,25 @@ class Disassembler
   def jmp
     _, target = peek(2)
     return unless target
+    raise('unknown jump target') if register?(target)
     skip(2)
-    "jmp #{pp_value(target)}"
+    "jmp #{gen_label(target)}"
   end
 
   def jt
     _, condition, target = peek(3)
     return unless condition && target
+    raise('unknown jump target') if register?(target)
     skip(3)
-    "jt #{pp_value(condition)} #{pp_value(target)}"
+    "jt #{pp_value(condition)} #{gen_label(target)}"
   end
 
   def jf
     _, condition, target = peek(3)
     return unless condition && target
+    raise('unknown jump target') if register?(target)
     skip(3)
-    "jf #{pp_value(condition)} #{pp_value(target)}"
+    "jf #{pp_value(condition)} #{gen_label(target)}"
   end
 
   def add
@@ -221,24 +229,33 @@ class Disassembler
   end
 
   def disassemble
-    # TODO: preserve @ip for printing it on each line
-    # TODO: insert saved labels
     while @ip < @program.length
+      ip = @ip # @ip might be changed by read_instruction
       instruction = read_instruction
       if instruction
-        @instructions << instruction
+        @instructions << [ip, instruction]
       else
-        @instructions << @program[@ip]
+        @instructions << [ip, @program[@ip]]
         @ip += 1
       end
     end
+  end
+
+  def pp_instructions
+    lines = []
+    @instructions.each do |ip, line|
+      label = @labels[ip]
+      lines << "#{label}:" if label
+      lines << "#{ip.to_s.rjust(5, ' ')} | #{line}"
+    end
+    lines.join("\n")
   end
 end
 
 def disassemble(program)
   disassembler = Disassembler.new(program)
   disassembler.disassemble
-  disassembler.instructions
+  disassembler.pp_instructions
 end
 
 if ARGV.length == 1

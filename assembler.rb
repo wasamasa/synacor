@@ -29,7 +29,7 @@ INSTRUCTION_TO_ID = {
 
 def parse_literal(arg)
   literal = arg.to_i
-  assert(literal >= 0 && literal < 32_768)
+  assert(literal >= 0 && literal < 32_776)
   literal
 end
 
@@ -94,6 +94,7 @@ def strip_labels!(words)
 end
 
 def assemble(inpath, outpath)
+  # TODO: use a proper lexer to handle comments and ' '
   words = File.open(inpath) { |f| f.read.split }
   labels = strip_labels!(words)
   values = words.map { |word| arg_to_int(word, labels) }

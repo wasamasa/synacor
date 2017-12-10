@@ -264,6 +264,6 @@ if ARGV.length == 1
 elsif ARGV.length == 2
   File.open(ARGV[1], 'w') { |f| f.puts(disassemble(slurp(ARGV[0]))) }
 else
-  puts 'usage: Disassembler.rb <in.bin> [out.syn]'
+  puts 'usage: Disassembler.rb <in.bin> [out.dis]'
   exit(1)
 end

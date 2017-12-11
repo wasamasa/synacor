@@ -1,5 +1,5 @@
 jmp start
-greeting: 'H' 'e' 'l' 'l' 'o' '\s' 'W' 'o' 'r' 'l' 'd' '!' '\n' 0
+greeting: 'H' 'e' 'l' 'l' 'o' ' ' 'W' 'o' 'r' 'l' 'd' '!' '\n' '\0'
 start: set r0 greeting
 loop: rmem r1 r0
 jf r1 end

@@ -27,6 +27,69 @@ INSTRUCTION_TO_ID = {
   noop: 21
 }.freeze
 
+class Tokenizer
+  def initialize(input)
+    @input = input
+    @index = 0
+    @tokens = []
+  end
+
+  def peek
+    @input[@index]
+  end
+
+  def next!
+    char = @input[@index]
+    @index += 1 if char
+    char
+  end
+
+  def tokenize
+    loop do
+      break unless peek
+      case peek
+      when /\s/ then read_whitespace
+      when ';'  then read_comment
+      when "'"  then @tokens << read_char
+      else @tokens << read_word
+      end
+    end
+    @tokens
+  end
+
+  def read_whitespace
+    next! while peek && peek[/\s/]
+  end
+
+  def read_comment
+    next! until peek == "\n"
+  end
+
+  def read_char
+    next!
+    raise('EOF') unless peek
+    char = next!
+    if char == '\\'
+      raise('EOF') unless peek
+      char += next!
+    end
+    raise('EOF') unless peek == "'"
+    next!
+    "'#{char}'"
+  end
+
+  def read_word
+    word = next!
+    word += next! while peek && peek[/[^';\s]/]
+    word
+  end
+end
+
+def tokenize(input)
+  tokenizer = Tokenizer.new(input)
+  tokenizer.tokenize
+end
+
 def parse_literal(arg)
   literal = arg.to_i
   assert(literal >= 0 && literal < 32_776)
@@ -56,14 +119,16 @@ def parse_escape(arg)
   when '\v' then "\v"
   when '\f' then "\f"
   when '\r' then "\r"
-  when '\s' then ' ' # stolen from elisp
+  when '\s' then ' '  # stolen from elisp
+  when '\0' then "\0" # stolen from C
+  else arg[1]
   end
 end
 
 def parse_char(arg)
   if arg.length == 1
     arg.ord
-  elsif arg[/^\\[abtnvfrs]$/]
+  elsif arg[/^\\.$/]
     parse_escape(arg).ord
   else
     raise('invalid character')
@@ -75,7 +140,7 @@ def arg_to_int(arg, labels)
   when /^[0-9]+$/ then parse_literal(arg)
   when /^r([0-9]+)$/ then parse_register($1)
   when /^[a-zA-Z0-9_]+$/ then parse_instruction_or_label(arg, labels)
-  when /^'([^']+)'$/ then parse_char($1)
+  when /^'(\\.|[^'])'$/ then parse_char($1)
   else raise("unknown arg type for: #{arg}")
   end
 end
@@ -94,8 +159,7 @@ def strip_labels!(words)
 end
 
 def assemble(inpath, outpath)
-  # TODO: use a proper lexer to handle comments and ' '
-  words = File.open(inpath) { |f| f.read.split }
+  words = tokenize(File.open(inpath, &:read))
   labels = strip_labels!(words)
   values = words.map { |word| arg_to_int(word, labels) }
   spit(outpath, values)

@@ -55,7 +55,6 @@ class Disassembler
     when "\v" then char = '\v'
     when "\f" then char = '\f'
     when "\r" then char = '\r'
-    when ' '  then char = '\s'
     end
     "'#{char}'"
   end

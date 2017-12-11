@@ -10,7 +10,7 @@ class Disassembler
     @label_index = 1
     @subrs = {}
     @subr_index = 1
-    @ip = 0
+    @pc = 0
   end
 
   def gen_label(target)
@@ -30,11 +30,11 @@ class Disassembler
   end
 
   def skip(n = 1)
-    @ip += n
+    @pc += n
   end
 
   def peek(n)
-    @program.slice(@ip, n)
+    @program.slice(@pc, n)
   end
 
   def pp_register(arg)
@@ -212,7 +212,7 @@ class Disassembler
   end
 
   def read_instruction
-    case @program[@ip]
+    case @program[@pc]
     when 0  then halt
     when 1  then set
     when 2  then push
@@ -239,26 +239,26 @@ class Disassembler
   end
 
   def disassemble
-    while @ip < @program.length
-      ip = @ip # @ip might be changed by read_instruction
+    while @pc < @program.length
+      pc = @pc # @pc might be changed by read_instruction
       instruction = read_instruction
       if instruction
-        @instructions << [ip, instruction]
+        @instructions << [pc, instruction]
       else
-        @instructions << [ip, @program[@ip]]
-        @ip += 1
+        @instructions << [pc, @program[@pc]]
+        @pc += 1
       end
     end
   end
 
   def pp_instructions
     lines = []
-    @instructions.each do |ip, line|
-      label = @labels[ip]
-      subr = @subrs[ip]
+    @instructions.each do |pc, line|
+      label = @labels[pc]
+      subr = @subrs[pc]
       lines << "#{label}:" if label
       lines << ";; #{subr}" if subr
-      lines << "#{ip.to_s.rjust(5, ' ')} | #{line}"
+      lines << "#{pad_pc(pc)} | #{line}"
     end
     lines.join("\n")
   end

@@ -49,3 +49,7 @@ end
 def str(bytes)
   bytes.pack('C*')
 end
+
+def pad_pc(pc)
+  pc.to_s.rjust(5, ' ')
+end

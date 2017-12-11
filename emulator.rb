@@ -1,34 +1,90 @@
 #!/usr/bin/env ruby
 
 require_relative 'util'
+require 'readline'
+
+MAX_PROGRAM_SIZE = 32_768
+MAX_INT = 32_768
+MAX_REGISTER = 32_776
+# TODO: help, break (on pc value, instruction kind), set
+SAFE_COMMANDS = [:run, :reset, :step, :show, :dump].freeze
+PROMPT = 'dbg> '.freeze
 
 class System
-  def initialize
-    @memory = Array.new(2**15)
-    @registers = Array.new(8, 0)
-    @stack = []
-    @ip = 0
+  def initialize(program)
+    assert(program.length <= MAX_PROGRAM_SIZE)
+    program.each { |value| assert(value >= 0 && value < MAX_REGISTER) }
+    @program = program
   end
 
-  def load(program)
-    assert(program.length <= @memory.length)
-    puts "Loading up #{program.length} instructions..."
-    program.each_with_index do |value, i|
-      assert(value >= 0 && value < 32_776)
-      @memory[i] = value
+  def rep(op, args)
+    if SAFE_COMMANDS.include?(op)
+      begin
+        send(op, *args)
+      rescue => e
+        puts e.backtrace
+      rescue SystemExit
+      end
+    else
+      puts 'unknown command'
     end
   end
 
+  def repl
+    reset
+    loop do
+      line = Readline.readline(PROMPT, true)
+      break unless line
+      op, args = parse_user_input(line)
+      rep(op, args)
+    end
+    puts
+  end
+
+  def reset
+    @memory = Array.new(MAX_PROGRAM_SIZE)
+    @registers = Array.new(8, 0)
+    @stack = []
+    @pc = 0
+    puts "Loading up #{@program.length} instructions..."
+    @program.each_with_index { |value, i| @memory[i] = value }
+  end
+
+  def show(thing, from = @pc, to = nil)
+    case thing
+    when :pc then puts "pc: #{@pc}"
+    when :registers then puts "registers: #{@registers}"
+    when :stack then puts "stack: #{@stack}"
+    when :memory then show_memory(from, to)
+    else puts 'unknown thing'
+    end
+  end
+
+  def show_memory(from, to)
+    to = from unless to
+    (from..to).each do |i|
+      break unless @memory[i]
+      puts "#{pad_pc(i)}: #{@memory[i]}"
+    end
+  end
+
+  def dump
+    filename = "dump_#{Time.now.strftime('%Y%m%d_%H%M%S')}.bin"
+    core = @memory.compact
+    spit(filename, core)
+    puts "Dumped #{core.length} bytes to #{filename}"
+  end
+
   def fetch
-    assert(@ip < @memory.length)
-    result = @memory[@ip]
-    @ip += 1
+    assert(@pc < @memory.length)
+    result = @memory[@pc]
+    @pc += 1
     result
   end
 
   def register_value(value)
     assert(register?(value))
-    @registers[value - 32_768]
+    @registers[value - MAX_INT]
   end
 
   def lookup(value)
@@ -36,7 +92,7 @@ class System
   end
 
   def halt
-    exit(0)
+    raise SystemExit
   end
 
   def set
@@ -81,33 +137,33 @@ class System
 
   def jmp
     target = lookup(fetch)
-    @ip = target
+    @pc = target
   end
 
   def jt
     condition = lookup(fetch)
     target = lookup(fetch)
-    @ip = target unless condition.zero?
+    @pc = target unless condition.zero?
   end
 
   def jf
     condition = lookup(fetch)
     target = lookup(fetch)
-    @ip = target if condition.zero?
+    @pc = target if condition.zero?
   end
 
   def add
     register = register_index(fetch)
     arg1 = lookup(fetch)
     arg2 = lookup(fetch)
-    @registers[register] = (arg1 + arg2) % 32_768
+    @registers[register] = (arg1 + arg2) % MAX_INT
   end
 
   def mult
     register = register_index(fetch)
     arg1 = lookup(fetch)
     arg2 = lookup(fetch)
-    @registers[register] = (arg1 * arg2) % 32_768
+    @registers[register] = (arg1 * arg2) % MAX_INT
   end
 
   def mod
@@ -152,16 +208,16 @@ class System
   end
 
   def call
-    assert(@memory[@ip + 1])
-    @stack.push(@ip + 1)
+    assert(@memory[@pc + 1])
+    @stack.push(@pc + 1)
     target = lookup(fetch)
-    @ip = target
+    @pc = target
   end
 
   def ret
     target = @stack.pop
     exit(0) unless target
-    @ip = target
+    @pc = target
   end
 
   def out
@@ -178,7 +234,11 @@ class System
 
   def noop; end
 
-  def step
+  def step(n = 1)
+    n.times { single_step }
+  end
+
+  def single_step
     op = fetch
     assert(op && op >= 0 && op < 22)
     case op
@@ -209,19 +269,30 @@ class System
 
   def run
     loop do
-      step
+      single_step
     end
   end
 end
 
-def emulate(program)
-  system = System.new
-  system.load(program)
-  system.run
+def parse_arg(arg)
+  if arg[/^\d+$/]
+    arg.to_i
+  else
+    arg.to_sym
+  end
 end
 
+def parse_user_input(line)
+  return [:repeat] if line.empty?
+  args = line.split.map { |arg| parse_arg(arg) }
+  op = args.shift
+  [op, args]
+end
+
+trap('INT', 'SIG_IGN')
 if ARGV.length == 1
-  emulate(slurp(ARGV[0]))
+  system = System.new(slurp(ARGV[0]))
+  system.repl
 else
   puts 'usage: emulator.rb <in.bin>'
   exit(1)

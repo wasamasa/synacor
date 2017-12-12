@@ -228,8 +228,9 @@ class System
 
   def _in
     register = register_index(fetch)
-    arg = STDIN.getc.ord
-    @registers[register] = arg
+    arg = STDIN.getc
+    raise SystemExit unless arg
+    @registers[register] = arg.ord
   end
 
   def noop; end

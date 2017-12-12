@@ -2,12 +2,13 @@
 
 require_relative 'util'
 require 'readline'
+require 'yaml'
 
 MAX_PROGRAM_SIZE = 32_768
 MAX_INT = 32_768
 MAX_REGISTER = 32_776
-# TODO: help, break (on pc value, instruction kind), set
-SAFE_COMMANDS = [:run, :reset, :step, :show, :dump].freeze
+# TODO: break (on pc value, instruction kind)
+SAFE_COMMANDS = [:run, :reset, :step, :show, :set, :dump, :restore].freeze
 PROMPT = 'dbg> '.freeze
 
 class System
@@ -22,7 +23,7 @@ class System
       begin
         send(op, *args)
       rescue => e
-        puts e.backtrace
+        puts e.to_s, e.backtrace
       rescue SystemExit
       end
     else
@@ -68,11 +69,42 @@ class System
     end
   end
 
+  def set(thing, *values)
+    assert(values[0])
+    case thing
+    when 'pc' then @pc = values[0]
+    when 'registers' then @registers = values
+    when 'stack' then @stack = values
+    when 'memory' then set_memory(values[0], values[1])
+    else puts 'unknown thing'
+    end
+  end
+
+  def set_memory(address, value)
+    assert(address && value)
+    @memory[address] = value
+  end
+
   def dump
-    filename = "dump_#{Time.now.strftime('%Y%m%d_%H%M%S')}.bin"
+    timestamp = Time.now.strftime('%Y%m%d_%H%M%S')
+
+    state_filename = "dump_#{timestamp}.yml"
+    state = { pc: @pc, registers: @registers, stack: @stack }
+    File.open(state_filename, 'w') { |f| f.puts YAML.dump(state) }
+    puts "Dumped emulator state to #{state_filename}"
+
+    core_filename = "dump_#{timestamp}.bin"
     core = @memory.compact
-    spit(filename, core)
-    puts "Dumped #{core.length} bytes to #{filename}"
+    spit(core_filename, core)
+    puts "Dumped #{core.length} bytes to #{core_filename}"
+  end
+
+  def restore(filename)
+    state = YAML.load_file(filename)
+    @pc = state[:pc]
+    @registers = state[:registers]
+    @stack = state[:stack]
+    puts "Restored emulator state from #{filename}"
   end
 
   def fetch
@@ -95,7 +127,7 @@ class System
     raise SystemExit
   end
 
-  def set
+  def _set
     register = register_index(fetch)
     value = lookup(fetch)
     @registers[register] = value
@@ -244,7 +276,7 @@ class System
     assert(op && op >= 0 && op < 22)
     case op
     when 0  then halt
-    when 1  then set
+    when 1  then _set
     when 2  then push
     when 3  then pop
     when 4  then eq

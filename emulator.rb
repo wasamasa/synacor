@@ -36,7 +36,7 @@ class System
       line = Readline.readline(PROMPT, true)
       break unless line
       op, args = parse_user_input(line)
-      rep(op, args)
+      rep(op.to_sym, args)
     end
     puts
   end
@@ -52,10 +52,10 @@ class System
 
   def show(thing, from = @pc, to = nil)
     case thing
-    when :pc then puts "pc: #{@pc}"
-    when :registers then puts "registers: #{@registers}"
-    when :stack then puts "stack: #{@stack}"
-    when :memory then show_memory(from, to)
+    when 'pc' then puts "pc: #{@pc}"
+    when 'registers' then puts "registers: #{@registers.join(' ')}"
+    when 'stack' then puts "stack: #{@stack.join(' ')}"
+    when 'memory' then show_memory(from, to)
     else puts 'unknown thing'
     end
   end
@@ -278,12 +278,11 @@ def parse_arg(arg)
   if arg[/^\d+$/]
     arg.to_i
   else
-    arg.to_sym
+    arg
   end
 end
 
 def parse_user_input(line)
-  return [:repeat] if line.empty?
   args = line.split.map { |arg| parse_arg(arg) }
   op = args.shift
   [op, args]

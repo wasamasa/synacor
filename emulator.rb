@@ -69,22 +69,14 @@ class System
     register = register_index(fetch)
     arg1 = lookup(fetch)
     arg2 = lookup(fetch)
-    if arg1 == arg2
-      @registers[register] = 1
-    else
-      @registers[register] = 0
-    end
+    @registers[register] = (arg1 == arg2 ? 1 : 0)
   end
 
   def gt
     register = register_index(fetch)
     arg1 = lookup(fetch)
     arg2 = lookup(fetch)
-    if arg1 > arg2
-      @registers[register] = 1
-    else
-      @registers[register] = 0
-    end
+    @registers[register] = (arg1 > arg2 ? 1 : 0)
   end
 
   def jmp

@@ -18,30 +18,6 @@ class System
     @program = program
   end
 
-  def rep(op, args)
-    if SAFE_COMMANDS.include?(op)
-      begin
-        send(op, *args)
-      rescue => e
-        puts e.to_s, e.backtrace
-      rescue SystemExit
-      end
-    else
-      puts 'unknown command'
-    end
-  end
-
-  def repl
-    reset
-    loop do
-      line = Readline.readline(PROMPT, true)
-      break unless line
-      op, args = parse_user_input(line)
-      rep(op.to_sym, args)
-    end
-    puts
-  end
-
   def reset
     @memory = Array.new(MAX_PROGRAM_SIZE)
     @registers = Array.new(8, 0)
@@ -49,62 +25,6 @@ class System
     @pc = 0
     puts "Loading up #{@program.length} instructions..."
     @program.each_with_index { |value, i| @memory[i] = value }
-  end
-
-  def show(thing, from = @pc, to = nil)
-    case thing
-    when 'pc' then puts "pc: #{@pc}"
-    when 'registers' then puts "registers: #{@registers.join(' ')}"
-    when 'stack' then puts "stack: #{@stack.join(' ')}"
-    when 'memory' then show_memory(from, to)
-    else puts 'unknown thing'
-    end
-  end
-
-  def show_memory(from, to)
-    to = from unless to
-    (from..to).each do |i|
-      break unless @memory[i]
-      puts "#{pad_pc(i)}: #{@memory[i]}"
-    end
-  end
-
-  def set(thing, *values)
-    assert(values[0])
-    case thing
-    when 'pc' then @pc = values[0]
-    when 'registers' then @registers = values
-    when 'stack' then @stack = values
-    when 'memory' then set_memory(values[0], values[1])
-    else puts 'unknown thing'
-    end
-  end
-
-  def set_memory(address, value)
-    assert(address && value)
-    @memory[address] = value
-  end
-
-  def dump
-    timestamp = Time.now.strftime('%Y%m%d_%H%M%S')
-
-    state_filename = "dump_#{timestamp}.yml"
-    state = { pc: @pc, registers: @registers, stack: @stack }
-    File.open(state_filename, 'w') { |f| f.puts YAML.dump(state) }
-    puts "Dumped emulator state to #{state_filename}"
-
-    core_filename = "dump_#{timestamp}.bin"
-    core = @memory.compact
-    spit(core_filename, core)
-    puts "Dumped #{core.length} bytes to #{core_filename}"
-  end
-
-  def restore(filename)
-    state = YAML.load_file(filename)
-    @pc = state[:pc]
-    @registers = state[:registers]
-    @stack = state[:stack]
-    puts "Restored emulator state from #{filename}"
   end
 
   def fetch
@@ -302,8 +222,88 @@ class System
 
   def run
     loop do
-      single_step
+      step
     end
+  end
+
+  def rep(op, args)
+    if SAFE_COMMANDS.include?(op)
+      begin
+        send(op, *args)
+      rescue => e
+        puts e.to_s, e.backtrace
+      rescue SystemExit
+      end
+    else
+      puts 'unknown command'
+    end
+  end
+
+  def repl
+    reset
+    loop do
+      line = Readline.readline(PROMPT, true)
+      break unless line
+      op, args = parse_user_input(line)
+      rep(op.to_sym, args)
+    end
+    puts
+  end
+
+  def show(thing, from = @pc, to = nil)
+    case thing
+    when 'pc' then puts "pc: #{@pc}"
+    when 'registers' then puts "registers: #{@registers.join(' ')}"
+    when 'stack' then puts "stack: #{@stack.join(' ')}"
+    when 'memory' then show_memory(from, to)
+    else puts 'unknown thing'
+    end
+  end
+
+  def show_memory(from, to)
+    to = from unless to
+    (from..to).each do |i|
+      break unless @memory[i]
+      puts "#{pad_pc(i)}: #{@memory[i]}"
+    end
+  end
+
+  def set(thing, *values)
+    assert(values[0])
+    case thing
+    when 'pc' then @pc = values[0]
+    when 'registers' then @registers = values
+    when 'stack' then @stack = values
+    when 'memory' then set_memory(values[0], values[1])
+    else puts 'unknown thing'
+    end
+  end
+
+  def set_memory(address, value)
+    assert(address && value)
+    @memory[address] = value
+  end
+
+  def dump
+    timestamp = Time.now.strftime('%Y%m%d_%H%M%S')
+
+    state_filename = "dump_#{timestamp}.yml"
+    state = { pc: @pc, registers: @registers, stack: @stack }
+    File.open(state_filename, 'w') { |f| f.puts YAML.dump(state) }
+    puts "Dumped emulator state to #{state_filename}"
+
+    core_filename = "dump_#{timestamp}.bin"
+    core = @memory.compact
+    spit(core_filename, core)
+    puts "Dumped #{core.length} bytes to #{core_filename}"
+  end
+
+  def restore(filename)
+    state = YAML.load_file(filename)
+    @pc = state[:pc]
+    @registers = state[:registers]
+    @stack = state[:stack]
+    puts "Restored emulator state from #{filename}"
   end
 end
 

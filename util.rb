@@ -53,3 +53,7 @@ end
 def pad_pc(pc)
   pc.to_s.rjust(5, ' ')
 end
+
+def info(message)
+  puts "[info] #{message}"
+end

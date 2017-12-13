@@ -23,7 +23,7 @@ class System
     @registers = Array.new(8, 0)
     @stack = []
     @pc = 0
-    puts "Loading up #{@program.length} instructions..."
+    info("Loading up #{@program.length} instructions...")
     @program.each_with_index { |value, i| @memory[i] = value }
   end
 
@@ -227,7 +227,7 @@ class System
       rescue SystemExit
       end
     else
-      puts 'unknown command'
+      info('unknown command')
     end
   end
 
@@ -244,11 +244,11 @@ class System
 
   def show(thing, from = @pc, to = nil)
     case thing
-    when 'pc' then puts "pc: #{@pc}"
-    when 'registers' then puts "registers: #{@registers.join(' ')}"
-    when 'stack' then puts "stack: #{@stack.join(' ')}"
+    when 'pc' then info("pc: #{@pc}")
+    when 'registers' then info("registers: #{@registers.join(' ')}")
+    when 'stack' then info("stack: #{@stack.join(' ')}")
     when 'memory' then show_memory(from, to)
-    else puts 'unknown thing'
+    else info('unknown thing')
     end
   end
 
@@ -256,7 +256,7 @@ class System
     to = from unless to
     (from..to).each do |i|
       break unless @memory[i]
-      puts "#{pad_pc(i)}: #{@memory[i]}"
+      info("#{pad_pc(i)}: #{@memory[i]}")
     end
   end
 
@@ -267,7 +267,7 @@ class System
     when 'registers' then @registers = values
     when 'stack' then @stack = values
     when 'memory' then set_memory(values[0], values[1])
-    else puts 'unknown thing'
+    else info('unknown thing')
     end
   end
 
@@ -282,12 +282,12 @@ class System
     state_filename = "dump_#{timestamp}.yml"
     state = { pc: @pc, registers: @registers, stack: @stack }
     File.open(state_filename, 'w') { |f| f.puts YAML.dump(state) }
-    puts "Dumped emulator state to #{state_filename}"
+    info("Dumped emulator state to #{state_filename}")
 
     core_filename = "dump_#{timestamp}.bin"
     core = @memory.compact
     spit(core_filename, core)
-    puts "Dumped #{core.length} bytes to #{core_filename}"
+    info("Dumped #{core.length} bytes to #{core_filename}")
   end
 
   def restore(filename)
@@ -295,7 +295,7 @@ class System
     @pc = state[:pc]
     @registers = state[:registers]
     @stack = state[:stack]
-    puts "Restored emulator state from #{filename}"
+    info("Restored emulator state from #{filename}")
   end
 end
 

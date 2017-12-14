@@ -22,6 +22,7 @@ class System
     @breakpoints = Set.new
     @breakops = Set.new
     @watches = Set.new
+    @cycles = 0
   end
 
   def reset
@@ -237,6 +238,7 @@ class System
     end
     check_breakpoints
     check_watches
+    @cycles += 1
   end
 
   def run
@@ -279,6 +281,7 @@ class System
     when 'breakpoints' then info("breakpoints: #{@breakpoints.to_a.join(' ')}")
     when 'breakops' then info("breakops: #{@breakops.to_a.join(' ')}")
     when 'watches' then info("watches: #{@watches.to_a.join(' ')}")
+    when 'cycles' then info("cycles: #{@cycles}")
     else info('unknown thing')
     end
   end

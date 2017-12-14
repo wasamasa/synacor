@@ -2,13 +2,16 @@
 
 require_relative 'util'
 require 'readline'
+require 'set'
 require 'yaml'
 
 MAX_PROGRAM_SIZE = 32_768
 MAX_INT = 32_768
 MAX_REGISTER = 32_776
-# TODO: break (on pc value, instruction kind)
-SAFE_COMMANDS = [:run, :reset, :step, :show, :set, :dump, :restore].freeze
+SAFE_COMMANDS = [:run, :reset, :step,
+                 :show, :set,
+                 :dump, :restore,
+                 :breakpoint, :breakop, :watch].freeze
 PROMPT = 'dbg> '.freeze
 
 class System
@@ -16,6 +19,9 @@ class System
     assert(program.length <= MAX_PROGRAM_SIZE)
     program.each { |value| assert(value >= 0 && value < MAX_REGISTER) }
     @program = program
+    @breakpoints = Set.new
+    @breakops = Set.new
+    @watches = Set.new
   end
 
   def reset
@@ -23,7 +29,7 @@ class System
     @registers = Array.new(8, 0)
     @stack = []
     @pc = 0
-    info("Loading up #{@program.length} instructions...")
+    info("loading up #{@program.length} instructions...")
     @program.each_with_index { |value, i| @memory[i] = value }
   end
 
@@ -44,7 +50,7 @@ class System
   end
 
   def halt
-    raise SystemExit
+    raise SystemExit, 'halt'
   end
 
   def _set
@@ -173,7 +179,7 @@ class System
   def _in
     register = register_index(fetch)
     arg = STDIN.getc
-    raise SystemExit unless arg
+    raise SystemExit, 'EOF' unless arg
     @registers[register] = arg.ord
   end
 
@@ -181,6 +187,25 @@ class System
 
   def step(n = 1)
     n.times { single_step }
+  end
+
+  def check_breakpoints
+    op = OP_TO_NAME[@memory[@pc]]
+    raise SystemExit, "breakpoint at #{@pc}" if @breakpoints.include?(@pc)
+    raise SystemExit, "break op: #{op}" if @breakops.include?(op)
+  end
+
+  def check_watches
+    op = @memory[@pc]
+    return unless [15, 16].include?(op)
+    if op == 15
+      address = lookup(@memory[@pc + 2])
+      message = "intercepted read from #{address}"
+    else
+      address = lookup(@memory[@pc + 1])
+      message = "intercepted write to #{address}"
+    end
+    raise SystemExit, message if @watches.include?(address)
   end
 
   def single_step
@@ -210,6 +235,8 @@ class System
     when 20 then _in
     when 21 then noop
     end
+    check_breakpoints
+    check_watches
   end
 
   def run
@@ -224,7 +251,8 @@ class System
         send(op, *args)
       rescue => e
         puts e.to_s, e.backtrace
-      rescue SystemExit
+      rescue SystemExit => e
+        info(e.message)
       end
     else
       info('unknown command')
@@ -248,6 +276,9 @@ class System
     when 'registers' then info("registers: #{@registers.join(' ')}")
     when 'stack' then info("stack: #{@stack.join(' ')}")
     when 'memory' then show_memory(from, to)
+    when 'breakpoints' then info("breakpoints: #{@breakpoints.to_a.join(' ')}")
+    when 'breakops' then info("breakops: #{@breakops.to_a.join(' ')}")
+    when 'watches' then info("watches: #{@watches.to_a.join(' ')}")
     else info('unknown thing')
     end
   end
@@ -282,12 +313,12 @@ class System
     state_filename = "dump_#{timestamp}.yml"
     state = { pc: @pc, registers: @registers, stack: @stack }
     File.open(state_filename, 'w') { |f| f.puts YAML.dump(state) }
-    info("Dumped emulator state to #{state_filename}")
+    info("dumped emulator state to #{state_filename}")
 
     core_filename = "dump_#{timestamp}.bin"
     core = @memory.compact
     spit(core_filename, core)
-    info("Dumped #{core.length} bytes to #{core_filename}")
+    info("dumped #{core.length} bytes to #{core_filename}")
   end
 
   def restore(filename)
@@ -295,7 +326,22 @@ class System
     @pc = state[:pc]
     @registers = state[:registers]
     @stack = state[:stack]
-    info("Restored emulator state from #{filename}")
+    info("restored emulator state from #{filename}")
+  end
+
+  def breakpoint(arg)
+    assert(arg > 0 && arg < MAX_PROGRAM_SIZE && @memory[arg])
+    @breakpoints << arg
+  end
+
+  def breakop(arg)
+    assert(OP_TO_NAME.include?(arg.to_sym))
+    @breakops << arg.to_sym
+  end
+
+  def watch(arg)
+    assert(arg > 0 && arg < MAX_PROGRAM_SIZE && @memory[arg])
+    @watches << arg
   end
 end
 

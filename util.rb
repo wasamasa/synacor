@@ -1,3 +1,8 @@
+OP_TO_NAME = [:halt, :set, :push, :pop, :eq, :gt, :jmp, :jt, :jf,
+              :add, :mult, :mod, :and, :or, :not, :rmem, :wmem,
+              :call, :ret, :out, :in, :noop].freeze
+NAME_TO_OP = OP_TO_NAME.zip(0..22).to_h.freeze
+
 def assert(condition)
   raise('assertion failed') unless condition
 end

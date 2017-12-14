@@ -272,7 +272,7 @@ class System
     puts
   end
 
-  def show(thing, from = @pc, to = nil)
+  def show(thing = nil, from = @pc, to = nil)
     case thing
     when 'pc' then info("pc: #{@pc}")
     when 'registers' then info("registers: #{@registers.join(' ')}")
@@ -282,6 +282,10 @@ class System
     when 'breakops' then info("breakops: #{@breakops.to_a.join(' ')}")
     when 'watches' then info("watches: #{@watches.to_a.join(' ')}")
     when 'cycles' then info("cycles: #{@cycles}")
+    when nil
+      show('pc')
+      show('registers')
+      show('stack')
     else info('unknown thing')
     end
   end

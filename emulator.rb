@@ -13,6 +13,7 @@ SAFE_COMMANDS = [:run, :reset, :step,
                  :dump, :restore,
                  :breakpoint, :breakop, :watch].freeze
 PROMPT = 'dbg> '.freeze
+HIST_FILE = '.repl_history'.freeze
 
 class System
   def initialize(program)
@@ -261,11 +262,35 @@ class System
     end
   end
 
+  def load_history
+    File.open(HIST_FILE) do |f|
+      f.readlines.each do |line|
+        line = line.chomp
+        Readline::HISTORY << line unless line.empty?
+      end
+    end
+  rescue Errno::ENOENT
+  end
+
+  def add_history!(line)
+    return unless line && !line.empty?
+    Readline::HISTORY << line
+    File.open(HIST_FILE, 'a') { |f| f.puts(line) }
+  end
+
+  def read_line
+    line = Readline.readline(PROMPT)
+    add_history!(line) if line && !line.empty?
+    line
+  end
+
   def repl
     reset
+    load_history
     loop do
-      line = Readline.readline(PROMPT, true)
+      line = read_line
       break unless line
+      next if line.empty?
       op, args = parse_user_input(line)
       rep(op.to_sym, args)
     end

@@ -284,14 +284,20 @@ class System
     line
   end
 
+  def run_commands(input)
+    input.split(/\s*;\s*/).each do |line|
+      op, args = parse_user_input(line)
+      rep(op.to_sym, args)
+    end
+  end
+
   def repl
     load_history
     loop do
       line = read_line
       break unless line
       next if line.empty?
-      op, args = parse_user_input(line)
-      rep(op.to_sym, args)
+      run_commands(line)
     end
     puts
   end

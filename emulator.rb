@@ -285,7 +285,6 @@ class System
   end
 
   def repl
-    reset
     load_history
     loop do
       line = read_line
@@ -392,10 +391,12 @@ def parse_user_input(line)
 end
 
 trap('INT', 'SIG_IGN')
-if ARGV.length == 1
+if [1, 2].include?(ARGV.length)
   system = System.new(slurp(ARGV[0]))
+  system.reset
+  system.restore(ARGV[1]) if ARGV[1]
   system.repl
 else
-  puts 'usage: emulator.rb <in.bin>'
+  puts 'usage: emulator.rb <in.bin> [in.yml]'
   exit(1)
 end

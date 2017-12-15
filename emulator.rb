@@ -324,7 +324,12 @@ class System
     to = from unless to
     (from..to).each do |i|
       break unless @memory[i]
-      info("#{pad_pc(i)}: #{@memory[i]}")
+      value = @memory[i]
+      if value < 128
+        info("#{pad_pc(i)}: #{value} (#{value.chr.inspect})")
+      else
+        info("#{pad_pc(i)}: #{value}")
+      end
     end
   end
 

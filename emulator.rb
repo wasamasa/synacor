@@ -274,14 +274,22 @@ class System
 
   def add_history!(line)
     return unless line && !line.empty?
+    return if !Readline::HISTORY.empty? && Readline::HISTORY[-1] == line
     Readline::HISTORY << line
     File.open(HIST_FILE, 'a') { |f| f.puts(line) }
   end
 
   def read_line
     line = Readline.readline(PROMPT)
-    add_history!(line) if line && !line.empty?
-    line
+    return unless line
+    if line.empty?
+      raise('no last line to repeat') if Readline::HISTORY.empty?
+      info("repeating: #{Readline::HISTORY[-1]}")
+      Readline::HISTORY[-1]
+    else
+      add_history!(line)
+      line
+    end
   end
 
   def run_commands(input)

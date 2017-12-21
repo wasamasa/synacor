@@ -1,0 +1,44 @@
+out 'E'
+out 'n'
+out 't'
+out 'e'
+out 'r'
+out ' '
+out 'y'
+out 'o'
+out 'u'
+out 'r'
+out ' '
+out 'n'
+out 'a'
+out 'm'
+out 'e'
+out ':'
+out ' '
+
+set r0 userdata
+read: in r1
+eq r2 r1 '\n'
+jt r2 greeting
+wmem r0 r1
+add r0 r0 1
+jmp read
+greeting:
+wmem r0 0
+
+out 'H'
+out 'e'
+out 'l'
+out 'l'
+out 'o'
+out ' '
+set r0 userdata
+printloop: rmem r1 r0
+jf r1 printend
+out r1
+add r0 r0 1
+jmp printloop
+printend: out '!'
+out '\n'
+halt
+userdata:

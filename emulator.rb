@@ -331,7 +331,7 @@ class System
   def show_memory(from, to)
     to = from unless to
     (from..to).each do |i|
-      break unless @memory[i]
+      next unless @memory[i]
       value = @memory[i]
       if value < 128
         info("#{pad_pc(i)}: #{value} (#{value.chr.inspect})")

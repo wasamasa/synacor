@@ -357,15 +357,15 @@ class System
     @memory[address] = value
   end
 
-  def dump
-    timestamp = Time.now.strftime('%Y%m%d_%H%M%S')
+  def dump(base = nil)
+    base ||= "dump_#{Time.now.strftime('%Y%m%d_%H%M%S')}"
 
-    state_filename = "dump_#{timestamp}.yml"
+    state_filename = "#{base}.yml"
     state = { pc: @pc, registers: @registers, stack: @stack }
     File.open(state_filename, 'w') { |f| f.puts YAML.dump(state) }
     info("dumped emulator state to #{state_filename}")
 
-    core_filename = "dump_#{timestamp}.bin"
+    core_filename = "#{base}.bin"
     core = @memory.compact
     spit(core_filename, core)
     info("dumped #{core.length} bytes to #{core_filename}")

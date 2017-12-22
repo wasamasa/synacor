@@ -1,0 +1,38 @@
+set r0 prompt
+call print
+set r0 input
+call read
+set r0 greeting1
+call print
+set r0 input
+call print
+set r0 greeting2
+call print
+halt
+
+;; functions
+
+print: ; assumes string address in r0, uses r1 for testing
+rmem r1 r0
+jf r1 printend
+out r1
+add r0 r0 1
+jmp print
+printend: ret
+
+read: ; assumes target address in r0, uses r1 and r2 for testing
+in r1
+eq r2 r1 '\n'
+jt r2 readterminate
+wmem r0 r1
+add r0 r0 1
+jmp read
+readterminate: wmem r0 '\0'
+ret
+
+;; data
+
+prompt: 'E' 'n' 't' 'e' 'r' ' ' 'y' 'o' 'u' 'r' ' ' 'n' 'a' 'm' 'e' ':' ' ' '\0'
+greeting1: 'H' 'e' 'l' 'l' 'o' ' ' '\0'
+greeting2: '!' '\n' '\0'
+input:

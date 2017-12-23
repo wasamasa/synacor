@@ -320,6 +320,8 @@ class System
     when 'breakops' then info("breakops: #{@breakops.to_a.join(' ')}")
     when 'watches' then info("watches: #{@watches.to_a.join(' ')}")
     when 'cycles' then info("cycles: #{@cycles}")
+    when 'cstring' then show_cstring(from)
+    when 'pstring' then show_pstring(from)
     when nil
       show('pc')
       show('registers')
@@ -339,6 +341,20 @@ class System
         info("#{pad_pc(i)}: #{value}")
       end
     end
+  end
+
+  def show_cstring(from)
+    bytes = []
+    until @memory[from].zero?
+      bytes << @memory[from]
+      from += 1
+    end
+    info(bytes.map(&:chr).join.inspect)
+  end
+
+  def show_pstring(from)
+    length = @memory[from]
+    info(@memory.slice(from + 1, length).map(&:chr).join.inspect)
   end
 
   def set(thing, *values)

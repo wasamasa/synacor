@@ -187,17 +187,19 @@ class System
 
   def noop; end
 
-  def step(n = 1)
-    n.times { single_step }
+  def check_runpoints(to)
+    raise SystemExit, "stopping run at #{@pc}" if @pc == to
   end
 
-  def check_breakpoints
+  def check_breakpoints(runpoint)
+    return if runpoint
     op = OP_TO_NAME[@memory[@pc]]
     raise SystemExit, "breakpoint at #{@pc}" if @breakpoints.include?(@pc)
     raise SystemExit, "break op: #{op}" if @breakops.include?(op)
   end
 
-  def check_watches
+  def check_watches(runpoint)
+    return if runpoint
     op = @memory[@pc]
     return unless [15, 16].include?(op)
     if op == 15
@@ -210,7 +212,7 @@ class System
     raise SystemExit, message if @watches.include?(address)
   end
 
-  def single_step
+  def step(to = nil)
     op = fetch
     assert(op && op >= 0 && op < 22)
     case op
@@ -237,14 +239,15 @@ class System
     when 20 then _in
     when 21 then noop
     end
-    check_breakpoints
-    check_watches
+    check_runpoints(to)
+    check_breakpoints(to)
+    check_watches(to)
     @cycles += 1
   end
 
-  def run
+  def run(to = nil)
     loop do
-      step
+      step(to)
     end
   end
 
